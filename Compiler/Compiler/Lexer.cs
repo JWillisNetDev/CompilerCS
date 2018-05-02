@@ -10,6 +10,7 @@ namespace Compiler
     {
         public enum TokenType
         {
+            END_OF_LINE, // Semantics
             NUMBER, OPERATOR, // Math
             DATE, TIME, DATE_TIME, // Date Time
         }
@@ -70,6 +71,8 @@ namespace Compiler
         public Lexer() {
             _tokenDefinitions = new List<TokenDefinition>();
 
+            _tokenDefinitions.Add(new TokenDefinition(TokenType.END_OF_LINE, @";", 10));
+
             _tokenDefinitions.Add(new TokenDefinition(TokenType.NUMBER, @"\d+\.?\d+", 100));
             _tokenDefinitions.Add(new TokenDefinition(TokenType.OPERATOR, @"[\+\-\/\*]", 100));
 
@@ -95,6 +98,14 @@ namespace Compiler
                 yield return new Token(bestMatch.TokenType, bestMatch.Value);
                 lastMatch = bestMatch;
             }
+        }
+
+        public List<Token> TokenizeToList(string msg)
+        {
+            List<Token> tokens = new List<Token>();
+            foreach(var token in Tokenize(msg))
+                tokens.Add(token);
+            return tokens;
         }
 
         private List<TokenMatch> FindMatches(string msg)
