@@ -1,51 +1,56 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Text;
+using System.Linq;
 
 namespace Compiler
 {
     public class Parser
     {
-        public class GrammarErrorException : Exception
+        public enum Symbol
         {
-        }
-        public enum GrammarRuleResult
-        {
-            OKAY, WARN, STOP
+            NODE_TYPE_ROOT,
+            KEYWORD, IDENTIFIER, CONSTANT, PUNCTUATOR, STRING_LITERAL
         }
         public class GrammarDefinition
         {
-            public delegate GrammarRuleResult GrammarRule(Grammar g, out string msg);
+            public List<Symbol> Accepts;
             public Lexer.TokenType TokenType;
-            public List<GrammarRule> GrammarRules;
-            
-            public GrammarDefinition()
+            public Symbol EvaluatesTo;
+
+            public GrammarDefinition(Lexer.TokenType tType, Symbol evalTo, params Symbol[] accepts)
             {
-                GrammarRules = new List<GrammarRule>();
+                Accepts = new List<Symbol>();
+                if(Accepts.Count > 0)
+                    Accepts.AddRange(accepts);
+
+                TokenType = tType;
+                EvaluatesTo = evalTo;
             }
 
-            public GrammarDefinition AddRule(GrammarRule rule)
-            {
-                GrammarRules.Add(rule);
-                return this;
-            }
-
-            public void CheckGrammar(Grammar g)
-            {
-                foreach (var rule in GrammarRules)
-                {
-                    string msg;
-                    GrammarRuleResult res = rule(g, out msg);
-                    //if(res == GrammarRuleResult.STOP)
-                        // throw an error.
-                }
-            }
+            public void AddAccepts(params Symbol[] accepts) => Accepts.AddRange(accepts);
         }
-        public class Grammar
+        public class GrammarNode
         {
-            public Grammar NestedL, NestedR;
+            public List<GrammarNode> Children;
+            public Symbol Symbol;
             public Lexer.Token Token;
+
+            public GrammarNode(Symbol sym, Lexer.Token toke = null)
+            {
+                Children = new List<GrammarNode>();
+                Symbol = sym;
+                Token = toke;
+            }
+
+            public void AddChild(GrammarNode node) => Children.Add(node);
+
+            public void GrammarCheck()
+            {
+            }
         }
+
+        public GrammarNode Root;
 
         private List<GrammarDefinition> _definitions;
 
@@ -53,10 +58,27 @@ namespace Compiler
         {
             _definitions = new List<GrammarDefinition>();
 
-            //out string msg;
-            _definitions.Add(new GrammarDefinition().AddRule((Grammar g, out string msg) => {
-                msg = "n/a";
-            });
+            _definitions.Add(new GrammarDefinition(Lexer.TokenType.END_OF_FILE, Symbol.NODE_TYPE_ROOT));
+            _definitions.Add(new GrammarDefinition(Lexer.TokenType.START_OF_FILE, Symbol.NODE_TYPE_ROOT));
+
+            _definitions.Add(new GrammarDefinition(Lexer.TokenType.NUMBER, Symbol.CONSTANT, null));
+            _definitions.Add(new GrammarDefinition(Lexer.TokenType.OPERATOR, Symbol.PUNCTUATOR, Symbol.CONSTANT));
+        }
+
+        public GrammarNode Parse(string msg)
+        {
+            Lexer parser = new Lexer();
+            var root = new GrammarNode(Symbol.NODE_TYPE_ROOT);
+
+            var nodes = new List<GrammarNode>();
+            foreach(var token in parser.Tokenize(msg))
+            {
+                var match = _definitions.First((x) => x.TokenType == token.TokenType); // Find the grammar definition
+                nodes.Add(new GrammarNode(match.EvaluatesTo, token));
+
+            }
+            nodes.ForEach((node) => System.Console.WriteLine($"{node.Symbol} // {node.Token.Value}"));
+            return root;
         }
     }
 }

@@ -10,7 +10,7 @@ namespace Compiler
     {
         public enum TokenType
         {
-            END_OF_LINE, // Semantics
+            START_OF_FILE, END_OF_FILE, END_OF_LINE, // Semantics
             NUMBER, OPERATOR, // Math
             DATE, TIME, DATE_TIME, // Date Time
         }
@@ -90,6 +90,7 @@ namespace Compiler
                 .ToList();
 
             TokenMatch lastMatch = null;
+            yield return new Token(TokenType.START_OF_FILE);
             for(int i=0; i < groupByIndex.Count; i++)
             {
                 var bestMatch = groupByIndex[i].OrderBy(x => x.Precedence).First();
@@ -98,6 +99,7 @@ namespace Compiler
                 yield return new Token(bestMatch.TokenType, bestMatch.Value);
                 lastMatch = bestMatch;
             }
+            yield return new Token(TokenType.END_OF_FILE);
         }
 
         public List<Token> TokenizeToList(string msg)

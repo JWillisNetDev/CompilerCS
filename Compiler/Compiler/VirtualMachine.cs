@@ -52,6 +52,5 @@ namespace Compiler
     }
     public class VirtualMachine
     {
-        public HashSet<Parser.Instruction> instructions;
     }
 }
